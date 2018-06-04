@@ -1,0 +1,180 @@
+---
+title: "NYPD Frisk"
+output:
+  html_document: default
+  html_notebook: default
+---
+#### Loading R packages
+```{r}
+library(lubridate)
+```
+#### Loading NYPD Dataset
+```{r}
+nypd = read.csv("C:/Users/Supriya Khadake/Documents/Projects/NYPD_Frisk/nypd_frisk_data.csv")
+```
+
+###Data Exploration
+
+#### Keeping relevant attributes only
+```{r}
+nypd = subset(nypd, select = -c(year,ser_num,recstat,trhsloc,crimsusp,arstmade,sumoffen,compyear,comppct,perobs,perstop,adtlrept,adtlrept,pistol,riflshot,asltweap,knifcuti,machgun,othrweap,pf_hands,pf_wall,pf_grnd,pf_drwep,pf_ptwep,pf_baton,pf_hcuff,pf_pepsp,pf_other,radio,ac_rept,ac_inves,sb_hdobj,sb_outln,sb_admis,sb_other,repcmd,revcmd,cs_bulge,cs_casng,cs_cloth,cs_descr,cs_drgtr,cs_furtv,cs_lkout,cs_objcs,cs_other,cs_vcrim,offverb,offshld,forceuse,dob,addrtyp,rescode,premtype,premname,addrnum,stname,stinter,crossst,aptnum,state,zip,addrpct,sector,beat,post,dettypCM,lineCM,detailCM,xcoord,ycoord,officrid,arstoffn,sumissue,explnstp))
+
+colnames(nypd)
+```
+
+```{r}
+nypd$frisked = nypd$frisked
+nypd$pct = nypd$pct
+nypddatestop = nypd$datestop
+nypd$timestop = nypd$timestop
+nypd$inout = nypd$inout
+nypd$typeofid = nypd$typeofid
+nypd$othpers = nypd$othpers
+nypd$offunif= nypd$offunif
+nypd$searched = nypd$searched
+nypd$contrabn = nypd$contrabn
+nypd$rf_vcrim = nypd$rf_vcrim
+nypd$rf_othsw = nypd$rf_othsw
+nypd$ac_proxm = nypd$ac_proxm
+nypd$rf_attir = nypd$rf_attir
+nypd$rf_vcact = nypd$rf_vcact
+nypd$ac_evasv = nypd$ac_evasv
+nypd$ac_assoc =	nypd$ac_assoc
+nypd$rf_rfcmp =	nypd$rf_rfcmp
+nypd$ac_cgdir =	nypd$ac_cgdir
+nypd$rf_verbl =	nypd$rf_verbl
+nypd$ac_incid =	nypd$ac_incid
+nypd$ac_time =	nypd$ac_time
+nypd$rf_knowl =	nypd$rf_knowl
+nypd$ac_stsnd =	nypd$ac_stsnd
+nypd$ac_other =	nypd$ac_other
+nypd$rf_furt =	nypd$rf_furt
+nypd$rf_bulg =	nypd$rf_bulg
+nypd$sex =	nypd$sex
+nypd$race =	nypd$race
+nypd$age =	nypd$age
+nypd$weight =	nypd$weight
+nypd$haircolr =	nypd$haircolr
+nypd$eyecolor =	nypd$eyecolor
+nypd$build =	nypd$build
+nypd$othfeatr =	nypd$othfeatr
+nypd$city =	nypd$city
+nypd$height =	nypd$height
+```
+
+```{r}
+head(nypd)
+tail(nypd)
+```
+
+#### Descriptive statistics of the dataset before data transformaion
+```{r}
+summary(nypd)
+```
+
+#### Structure of the dataset before data transformation
+```{r}
+str(nypd)
+```
+
+### Data Transformation and Cleaning
+
+#### Aggregated variables like height in feet and inches to one vriables height
+```{r}
+nypd$height = nypd$ht_feet+(nypd$ht_inch*0.0833333)
+nypd$height = as.integer(round(nypd$height))
+nypd = subset(nypd, select = -c(ht_feet, ht_inch))
+```
+
+####  Extracting month from date
+```{r}
+nypd$datestop = mdy(nypd$datestop)
+nypd$datestop = as.factor(month(as.POSIXlt(nypd$datestop, format="%d/%m/%Y")))
+```
+
+#### Conveting timestop to factors
+```{r}
+nypd$timestop = as.factor(ifelse(nypd$timestop > 0 & nypd$timestop < 559, 1, ifelse(nypd$timestop > 600 & nypd$timestop < 1159, 2, ifelse(nypd$timestop > 1200 & nypd$timestop < 1759, 3,4 ))))
+```
+
+#### Replacing age and weight irrelevant values with mean
+#### Converting typeofid to binary formaat if R(refused) then 0 else O,P,R(showed) = 1
+#### Was stopped inside or outside values to binary i.e. if O then 0 else 1
+```{r}
+nypd$age = ifelse(nypd$age > 100 | nypd$age < 0, 28.96, nypd$age)
+nypd$weight = as.integer(ifelse(nypd$weight > 500 | nypd$weight <20, 171.4, nypd$weight))
+nypd$typeofid = as.factor(ifelse(nypd$typeofid == 'R', 0, 1))
+nypd$inout = as.factor(ifelse(nypd$inout == 'O', 0, 1))
+```
+
+#### Converting datatype of datestop & timestop from num to int
+```{r}
+nypd$datestop = as.integer(nypd$datestop)
+nypd$timestop = as.integer(nypd$timestop)
+```
+
+
+#### Descriptive statistics of the dataset after data transformation
+```{r}
+summary(nypd)
+```
+
+#### Structure of the dataset
+```{r}
+str(nypd)
+```
+
+```{r}
+head(nypd)
+tail(nypd)
+```
+
+```{r fig.width = 14, fig.height = 10}
+correlation_var = nypd[c(1:3,6:27,30,37)]
+correlation = cor(correlation_var)
+corrplot(correlation)
+```
+```{r}
+colnames(nypd)
+```
+
+```{r}
+
+
+```
+
+```{r}
+cor(cbind(pct, frisked))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
